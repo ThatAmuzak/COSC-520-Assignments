@@ -13,6 +13,6 @@ def generate_unique_usernames(n, prefix="user"):
 
 
 if __name__ == "__main__":
-    logins = generate_unique_usernames(10000000)
+    logins = generate_unique_usernames(1000000)
     print("generated logins")
     # TODO: profile the algorithms, and document their performance for different dataset sizes

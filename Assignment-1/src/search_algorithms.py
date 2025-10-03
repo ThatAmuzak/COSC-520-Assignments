@@ -111,7 +111,7 @@ def generate_hash_table(arr: list[str]) -> dict[str, int]:
     return table
 
 
-# @typechecked
+@typechecked
 def hash_search(table: dict[str, int], target: str) -> int:
     """
     Searches for a string in the hash table and returns its index.
@@ -137,6 +137,3 @@ def hash_search(table: dict[str, int], target: str) -> int:
 
     """
     return table.get(target, -1)
-
-
-hash_search(1, "aa")
