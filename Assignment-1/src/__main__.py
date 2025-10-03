@@ -1,4 +1,4 @@
-# from src.algorithms import lin_search, bin_search, hash_table_search, bloom_filter_search, cuckoo_filter_search,
+# import search_algorithms
 
 from tqdm import tqdm
 
