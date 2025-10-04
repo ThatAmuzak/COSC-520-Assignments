@@ -2,7 +2,10 @@ import random
 import statistics
 import timeit
 
+import pandas as pd
 from search_algorithms import (
+    BloomFilter,
+    CuckooFilter,
     binary_search,
     generate_hash_table,
     hash_search,
@@ -16,6 +19,15 @@ WARMUP_COUNT = 3  # number of warmup iterations before measuring
 REPEAT_COUNT = 10  # number of repetitions
 PER_REPETITION_STMT_COUNT = 5  # number of function evals within a repetition
 RANDOM_SEED = 42  # random seed
+
+results_df = pd.DataFrame(
+    {
+        "search_func": pd.Series(dtype="string"),
+        "size": pd.Series(dtype="int"),
+        "hit": pd.Series(dtype="string"),
+        "times": pd.Series(dtype="float"),
+    }
+)
 
 
 @typechecked
@@ -56,7 +68,6 @@ def profile_linear_search(arr: list[str], sizes: list[int], element_present: boo
         # measure
         timer = timeit.Timer(stmt)
         times = timer.repeat(repeat=REPEAT_COUNT, number=PER_REPETITION_STMT_COUNT)
-        print(times)
 
         print(
             f"n={n:>10} | "
@@ -66,6 +77,14 @@ def profile_linear_search(arr: list[str], sizes: list[int], element_present: boo
             f"max={max(times):.6f}s | "
             f"stddev={statistics.stdev(times):.6f}s"
         )
+
+        for t in times:
+            results_df.loc[len(results_df)] = {
+                "search_func": "Linear",
+                "size": n,
+                "hit": "HIT" if element_present else "MISS",
+                "times": t,
+            }
 
 
 @typechecked
@@ -77,7 +96,7 @@ def profile_binary_search(arr: list[str], sizes: list[int], element_present: boo
         if element_present:
             target = sub_arr[random.randint(0, n - 1)]
         else:
-            target = "blah blah blah blah"
+            target = "not_present"
 
         # wrapper statement for timeit
         def stmt():
@@ -99,6 +118,14 @@ def profile_binary_search(arr: list[str], sizes: list[int], element_present: boo
             f"max={max(times):.6f}s | "
             f"stddev={statistics.stdev(times):.6f}s"
         )
+
+        for t in times:
+            results_df.loc[len(results_df)] = {
+                "search_func": "Binary",
+                "size": n,
+                "hit": "HIT" if element_present else "MISS",
+                "times": t,
+            }
 
 
 @typechecked
@@ -136,6 +163,106 @@ def profile_hashmap_search(arr: list[str], sizes: list[int], element_present: bo
             f"stddev={statistics.stdev(times):.6f}s"
         )
 
+        for t in times:
+            results_df.loc[len(results_df)] = {
+                "search_func": "Hashmap",
+                "size": n,
+                "hit": "HIT" if element_present else "MISS",
+                "times": t,
+            }
+
+
+@typechecked
+def profile_bloom_search(arr: list[str], sizes: list[int], element_present: bool):
+    random.seed(RANDOM_SEED)
+    print("Setting up bitarray")
+    filter = BloomFilter()
+    for login in arr:
+        filter.add(login)
+    print("bitarray setup complete")
+    for n in sizes:
+        sub_arr = arr[:n]
+
+        if element_present:
+            target = sub_arr[random.randint(0, n - 1)]
+        else:
+            target = "not_present"
+
+        # wrapper statement for timeit
+        def stmt():
+            return filter.get(target)
+
+        # warmup
+        for _ in range(WARMUP_COUNT):
+            stmt()
+
+        # measure
+        timer = timeit.Timer(stmt)
+        times = timer.repeat(repeat=REPEAT_COUNT, number=PER_REPETITION_STMT_COUNT)
+
+        print(
+            f"n={n:>10} | "
+            f"target={'HIT' if element_present else 'MISS'} | "
+            f"min={min(times):.6f}s | "
+            f"avg={sum(times) / len(times):.6f}s | "
+            f"max={max(times):.6f}s | "
+            f"stddev={statistics.stdev(times):.6f}s"
+        )
+
+        for t in times:
+            results_df.loc[len(results_df)] = {
+                "search_func": "Bloom",
+                "size": n,
+                "hit": "HIT" if element_present else "MISS",
+                "times": t,
+            }
+
+
+@typechecked
+def profile_cuckoo_search(arr: list[str], sizes: list[int], element_present: bool):
+    random.seed(RANDOM_SEED)
+    print("Setting up bitarray")
+    filter = CuckooFilter()
+    for login in arr:
+        filter.add(login)
+    print("bitarray setup complete")
+    for n in sizes:
+        sub_arr = arr[:n]
+
+        if element_present:
+            target = sub_arr[random.randint(0, n - 1)]
+        else:
+            target = "not_present"
+
+        # wrapper statement for timeit
+        def stmt():
+            return filter.get(target)
+
+        # warmup
+        for _ in range(WARMUP_COUNT):
+            stmt()
+
+        # measure
+        timer = timeit.Timer(stmt)
+        times = timer.repeat(repeat=REPEAT_COUNT, number=PER_REPETITION_STMT_COUNT)
+
+        print(
+            f"n={n:>10} | "
+            f"target={'HIT' if element_present else 'MISS'} | "
+            f"min={min(times):.6f}s | "
+            f"avg={sum(times) / len(times):.6f}s | "
+            f"max={max(times):.6f}s | "
+            f"stddev={statistics.stdev(times):.6f}s"
+        )
+
+        for t in times:
+            results_df.loc[len(results_df)] = {
+                "search_func": "Cuckoo",
+                "size": n,
+                "hit": "HIT" if element_present else "MISS",
+                "times": t,
+            }
+
 
 if __name__ == "__main__":
     sizes = [
@@ -149,11 +276,11 @@ if __name__ == "__main__":
         50_000,
         100_000,
         500_000,
-        1_000_000,
-        5_000_000,
-        10_000_000,
-        50_000_000,
-        100_000_000,
+        # 1_000_000,
+        # 5_000_000,
+        # 10_000_000,
+        # 50_000_000,
+        # 100_000_000,
     ]
 
     # generate once at max size
@@ -192,3 +319,28 @@ if __name__ == "__main__":
     print("When item is NOT present".center(60))
     profile_hashmap_search(arr, sizes, False)
     print("=" * 60)
+
+    print("=" * 60)
+    print("📊 Profiling: BLOOMSEARCH".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("=" * 60)
+    print("When item is present".center(60))
+    profile_bloom_search(arr, sizes, True)
+    print("=" * 60)
+    print("When item is NOT present".center(60))
+    profile_bloom_search(arr, sizes, False)
+    print("=" * 60)
+
+    print("=" * 60)
+    print("📊 Profiling: CUCKOOSEARCH".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("=" * 60)
+    print("When item is present".center(60))
+    profile_cuckoo_search(arr, sizes, True)
+    print("=" * 60)
+    print("When item is NOT present".center(60))
+    profile_cuckoo_search(arr, sizes, False)
+    print("=" * 60)
+
+    results_df.to_csv("src/results.csv", index=False)
+    print("Results saved to results.csv")
