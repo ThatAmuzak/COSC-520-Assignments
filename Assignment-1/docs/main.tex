@@ -38,6 +38,7 @@ The login checker problem involves verifying whether a given username exists wit
 Efficiently solving this problem is crucial for systems requiring rapid authentication processes.
 Various data structures offer different trade-offs in terms of time complexity, space efficiency, and functionality.
 This assignment explores several approaches to address the login checker problem.
+All code for the assignment can be found on \url{https://github.com/ThatAmuzak/COSC-520-Assignments}, in the \texttt{Assignment-1} directory.
 
 \section{Approaches}
 
@@ -114,7 +115,7 @@ The profiling aimed to measure execution time under both successful and unsucces
 Unique usernames were generated using a simple deterministic scheme, producing strings in the format \texttt{user0, user1, ..., userN-1}.
 The maximum dataset size was set according to the largest size in the profiling series, and smaller subsets were sliced from this master list for consistency.
 This ensured that all search approaches were tested on identical input datasets.
-A maximum size of $100,000,000$ was possible due to out of memory errors beyond that size.
+A maximum size of $10,000,000$ was possible due to out of memory errors beyond that size.
 
 \subsection{Warmup and Timing Strategy}
 Each search function underwent a warmup phase before measurements, consisting of \texttt{WARMUP\_COUNT = 3} executions per target.
@@ -155,8 +156,8 @@ All raw timing results were stored in a pandas DataFrame and exported to a CSV f
 \begin{figure}[H]
 	\centering
 	\includegraphics[width=1\textwidth]{results.pdf}
-	\caption{Results showcasing the performance of the different functions. The color indicates the search function utilized, while the style of the line indicates if the search performed was using a target present in the relevant data structure (HIT) or not (MISS)}
-	\Description{Results showcasing the performance of the different functions. The color indicates the search function utilized, while the style of the line indicates if the search performed was using a target present in the relevant data structure (HIT) or not (MISS)}
+	\caption{Results showcasing the performance of the different functions, with 95\% confidence intervals in the shaded area. The color indicates the search function utilized, while the style of the line indicates if the search performed was using a target present in the relevant data structure (HIT) or not (MISS)}
+	\Description{Results showcasing the performance of the different functions, with 95\% confidence intervals in the shaded area. The color indicates the search function utilized, while the style of the line indicates if the search performed was using a target present in the relevant data structure (HIT) or not (MISS)}
 	\label{fig:pdfimage}
 \end{figure}
 

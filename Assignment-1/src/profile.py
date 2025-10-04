@@ -276,11 +276,9 @@ if __name__ == "__main__":
         50_000,
         100_000,
         500_000,
-        # 1_000_000,
-        # 5_000_000,
-        # 10_000_000,
-        # 50_000_000,
-        # 100_000_000,
+        1_000_000,
+        5_000_000,
+        10_000_000,
     ]
 
     # generate once at max size
@@ -289,7 +287,7 @@ if __name__ == "__main__":
 
     print("=" * 60)
     print("📊 Profiling: LINEAR SEARCH".center(60))
-    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 x 5 cycles;".center(60))
     print("=" * 60)
     print("When item is present".center(60))
     profile_linear_search(arr, sizes, True)
@@ -300,7 +298,7 @@ if __name__ == "__main__":
 
     print("=" * 60)
     print("📊 Profiling: BINARY SEARCH".center(60))
-    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 x 5 cycles;".center(60))
     print("=" * 60)
     print("When item is present".center(60))
     profile_binary_search(arr, sizes, True)
@@ -311,7 +309,7 @@ if __name__ == "__main__":
 
     print("=" * 60)
     print("📊 Profiling: HASHMAP SEARCH".center(60))
-    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 x 5 cycles;".center(60))
     print("=" * 60)
     print("When item is present".center(60))
     profile_hashmap_search(arr, sizes, True)
@@ -322,7 +320,7 @@ if __name__ == "__main__":
 
     print("=" * 60)
     print("📊 Profiling: BLOOMSEARCH".center(60))
-    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 x 5 cycles;".center(60))
     print("=" * 60)
     print("When item is present".center(60))
     profile_bloom_search(arr, sizes, True)
@@ -333,7 +331,7 @@ if __name__ == "__main__":
 
     print("=" * 60)
     print("📊 Profiling: CUCKOOSEARCH".center(60))
-    print("Warmup: 3 cycles; Measuring on: 10 cycles;".center(60))
+    print("Warmup: 3 cycles; Measuring on: 10 x 5 cycles;".center(60))
     print("=" * 60)
     print("When item is present".center(60))
     profile_cuckoo_search(arr, sizes, True)
