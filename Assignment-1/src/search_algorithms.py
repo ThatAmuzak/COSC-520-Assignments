@@ -334,8 +334,22 @@ class CuckooFilter:
     # ----- public API -----
     def insert(self, item: str) -> bool:
         """
-        Insert item. Returns True on success.
-        Raises CapacityException (ValueError) if insertion fails after max_kicks.
+        Insert an item into the cuckoo filter.
+
+        Parameters
+        ----------
+        item : str
+            The item to be inserted.
+
+        Returns
+        -------
+        bool
+            True if the item was successfully inserted.
+
+        Raises
+        ------
+        ValueError
+            If insertion fails after `max_kicks` attempts, indicating the filter is at capacity.
         """
         item_b = self._ensure_bytes(item)
         fp = self._fingerprint(item_b)
@@ -364,12 +378,40 @@ class CuckooFilter:
         )
 
     def contains(self, item: str) -> bool:
+        """
+        Check if an item may exist in the cuckoo filter.
+
+        Parameters
+        ----------
+        item : str
+            The item to check for membership.
+
+        Returns
+        -------
+        bool
+            True if the item may be in the filter (possible false positives).
+            False if the item is definitely not in the filter.
+        """
         item_b = self._ensure_bytes(item)
         fp = self._fingerprint(item_b)
         i1, i2 = self._indices(item_b, fp)
         return self._include(fp, i1) or self._include(fp, i2)
 
     def delete(self, item: str) -> bool:
+        """
+        Remove an item from the cuckoo filter.
+
+        Parameters
+        ----------
+        item : str
+            The item to delete.
+
+        Returns
+        -------
+        bool
+            True if the item was successfully removed.
+            False if the item was not found.
+        """
         item_b = self._ensure_bytes(item)
         fp = self._fingerprint(item_b)
         i1, i2 = self._indices(item_b, fp)
@@ -379,4 +421,12 @@ class CuckooFilter:
         return False
 
     def load_factor(self) -> float:
+        """
+        Compute the current load factor of the cuckoo filter.
+
+        Returns
+        -------
+        float
+            The load factor, calculated as (number of items) / (capacity * bucket_size)
+        """
         return round(float(self.size) / (self.capacity * self.bucket_size), 6)
