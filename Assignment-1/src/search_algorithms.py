@@ -234,7 +234,7 @@ class CuckooFilter:
 
     def __init__(
         self,
-        capacity: int,
+        capacity: int = 40_000_000,
         error_rate: float = 0.01,
         bucket_size: int = 4,
         max_kicks: int = 500,
@@ -332,7 +332,7 @@ class CuckooFilter:
         return i1, i2
 
     # ----- public API -----
-    def insert(self, item: str) -> bool:
+    def add(self, item: str) -> bool:
         """
         Insert an item into the cuckoo filter.
 
@@ -377,7 +377,7 @@ class CuckooFilter:
             f"Cuckoo filter full after {self.max_kicks} kicks (size={self.size})"
         )
 
-    def contains(self, item: str) -> bool:
+    def get(self, item: str) -> bool:
         """
         Check if an item may exist in the cuckoo filter.
 

@@ -1,6 +1,7 @@
 import pytest
 from src.search_algorithms import (
     BloomFilter,
+    CuckooFilter,
     binary_search,
     generate_hash_table,
     hash_search,
@@ -65,19 +66,77 @@ def test_hashmap_search():
 
 def test_bloom_search():
     """
-    Tests the binary search function
+    Tests the bloom search function
     We only test for existence, since
     that's the login checker's goal.
     """
-    filter = BloomFilter()
+    filter = BloomFilter(10, 0.01)
     filter.add("aa")
     assert filter.get("aa")  # should find
-    # assert not hash_search(generate_hash_table([]), "aa")  # should not find
-    # assert not hash_search(generate_hash_table(["aa"]), "")  # should not find
-    # assert hash_search(generate_hash_table(["a", "b", "c"]), "b")  # should find
-    # assert not hash_search(generate_hash_table(["a", "b", "c"]), "d")  # should not find
-    # assert hash_search(generate_hash_table(["d", "c", "b", "a"]), "c")  # should find
-    # with pytest.raises(TypeCheckError):
-    #     hash_search(generate_hash_table(1), "a")  # should raise type error
-    # with pytest.raises(TypeCheckError):
-    #     hash_search(generate_hash_table(["a"]), 1)  # should raise type error
+
+    filter = BloomFilter(10, 0.01)
+    assert not filter.get("aa")  # should not find
+
+    filter = BloomFilter(10, 0.01)
+    filter.add("aa")
+    assert not filter.get("")  # should not find
+
+    filter = BloomFilter(10, 0.01)
+    filter.add("b")
+    filter.add("a")
+    filter.add("c")
+    assert filter.get("c")  # should find
+
+    filter = BloomFilter(10, 0.01)
+    filter.add("b")
+    filter.add("a")
+    filter.add("c")
+    assert not filter.get("d")  # should not find
+
+    filter = BloomFilter(10, 0.01)
+    with pytest.raises(TypeCheckError):
+        filter.add(1)  # should raise type error
+
+    filter = BloomFilter(10, 0.01)
+    filter.add("aa")
+    with pytest.raises(TypeCheckError):
+        filter.get(1)  # should raise type error
+
+
+def test_cuckoo_search():
+    """
+    Tests the cuckoo search function
+    We only test for existence, since
+    that's the login checker's goal.
+    """
+    filter = CuckooFilter(10, 0.01)
+    filter.add("aa")
+    assert filter.get("aa")  # should find
+
+    filter = CuckooFilter(10, 0.01)
+    assert not filter.get("aa")  # should not find
+
+    filter = CuckooFilter(10, 0.01)
+    filter.add("aa")
+    assert not filter.get("")  # should not find
+
+    filter = CuckooFilter(10, 0.01)
+    filter.add("b")
+    filter.add("a")
+    filter.add("c")
+    assert filter.get("c")  # should find
+
+    filter = CuckooFilter(10, 0.01)
+    filter.add("b")
+    filter.add("a")
+    filter.add("c")
+    assert not filter.get("d")  # should not find
+
+    filter = CuckooFilter(10, 0.01)
+    with pytest.raises(TypeCheckError):
+        filter.add(1)  # should raise type error
+
+    filter = CuckooFilter(10, 0.01)
+    filter.add("aa")
+    with pytest.raises(TypeCheckError):
+        filter.get(1)  # should raise type error
