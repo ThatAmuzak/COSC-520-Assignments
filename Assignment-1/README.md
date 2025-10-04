@@ -3,16 +3,25 @@
 ## Project Setup
 
 - **Installation**:
-  This project uses [Poetry](https://python-poetry.org/), which can be installed from [here](https://python-poetry.org/docs/#installation)
-  `poetry install`
+  This project uses [Poetry](https://python-poetry.org/), which can be installed from [here](https://python-poetry.org/docs/#installation).
+  To install all relevant dependencies, please run
+
+  ```sh
+  poetry install
+  ```
 
 - **Profiling**:
   To run the profiling script, simply run:
-  `python .\src\profile.py`
+
+  ```sh
+  python .\src\profile.py
+  ```
 
 - **Testing**:
   To run all unit tests, simply run
-  `pytest .\tests\test_search_algorithms.py`
+  ```sh
+  pytest .\tests\test_search_algorithms.py
+  ```
 
 ---
 
