@@ -28,7 +28,7 @@
   To run all unit tests, simply run
 
   ```sh
-  pytest .\tests\test_fuzzy_search.py
+  pytest -s .\tests\test_algorithms.py
   ```
 
 ---

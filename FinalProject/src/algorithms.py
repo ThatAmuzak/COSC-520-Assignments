@@ -6,8 +6,19 @@ Collection of classical substring search algorithms for profiling
 The implementations include:
 - kmp_search: Knuth–Morris–Pratt algorithm using an LPS
     (longest proper prefix which is also suffix) table.
+
+    Function Signature:
+    kmp_search(pattern: str, text: str) -> List[int]:
+
 - rabin_karp: Rabin–Karp algorithm with a rolling hash (large prime modulus).
+
+    Function Signature:
+    def rabin_karp(pattern: str, text: str) -> List[int]:
+
 - boyer_moore: Full Boyer–Moore using bad-character and good-suffix heuristics.
+
+    Function Signature:
+    def boyer_moore(pattern: str, text: str) -> List[int]:
 
 Notes
 -----
