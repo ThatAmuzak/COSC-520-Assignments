@@ -1,6 +1,8 @@
 import os
 import re
 import shutil
+import gzip
+import requests
 
 # ===================================================
 # Gutenberg text fetching
@@ -174,3 +176,108 @@ print("Generating Adversarial corpus")
 write_file(OUTPUT_PATH)
 print(f"Final Corpus: {OUTPUT_PATH}, Character Count {TOTAL_CHARS}")
 print("==============================")
+
+
+# ===================================================
+# Panda DNA dataset generation
+# ===================================================
+URL_LIST = [
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.1.fa.gz", # 61MB
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.2.fa.gz", # 57MB
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.3.fa.gz", # 42MB
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.4.fa.gz", # 41MB
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.17.fa.gz", #12MB
+    "https://ftp.ensembl.org/pub/release-112/fasta/ailuropoda_melanoleuca/dna/Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.20.fa.gz" #8.8 MB
+]
+DNA_URL = (
+    URL_LIST[4] # choose the data you want
+)
+DNA_GZ_PATH = os.path.join(root, "Ailuropoda_melanoleuca.ASM200744v2.dna.primary_assembly.1.fa.gz")
+DNA_FA_PATH = os.path.join(root, "Panda_DNA.fa")
+
+
+def download_with_progress(url: str, dst_path: str, desc: str = "Downloading"):
+    ensure_dir(dst_path)
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("Content-Length", 0))
+        chunk_size = 1024 * 1024  # 1 MB
+        progress = tqdm(
+            total=total,
+            unit="B",
+            unit_scale=True,
+            desc=desc,
+        )
+        with open(dst_path, "wb") as f:
+            for chunk in r.iter_content(chunk_size=chunk_size):
+                if not chunk:
+                    continue
+                f.write(chunk)
+                progress.update(len(chunk))
+        progress.close()
+
+
+def gunzip_with_progress(src_gz: str, dst_path: str, desc: str = "Unzipping"):
+    total = os.path.getsize(src_gz)
+    chunk_size = 1024 * 1024  # 1 MB
+
+    progress = tqdm(
+        total=total,
+        unit="B",
+        unit_scale=True,
+        desc=desc,
+    )
+    with gzip.open(src_gz, "rb") as f_in, open(dst_path, "wb") as f_out:
+        while True:
+            chunk = f_in.read(chunk_size)
+            if not chunk:
+                break
+            f_out.write(chunk)
+            progress.update(len(chunk))
+    progress.close()
+    os.remove(src_gz)
+
+def preprocess_dna_fasta(path: str):
+    print("Preprocessing DNA fasta (removing headers and newlines in sequences)")
+
+    seq_parts = []
+
+    with open(path, "r") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            # skip header lines
+            if line.startswith(">"):
+                continue
+            # append DNA sequence part
+            seq_parts.append(line)
+
+    merged_seq = "".join(seq_parts)
+
+    with open(path, "w") as f:
+        f.write(merged_seq)
+
+    print("DNA preprocessing complete (headers removed, sequences merged).")
+
+
+
+def generate_panda_dna_dataset():
+    print("Generating Panda DNA dataset")
+
+    # 1. download to ./data
+    if not os.path.exists(DNA_GZ_PATH):
+        download_with_progress(DNA_URL, DNA_GZ_PATH, desc="Downloading panda DNA")
+    else:
+        print(f"Archive already exists at {DNA_GZ_PATH}, skipping download.")
+
+    # 2. unzip and rename the .fa file
+    gunzip_with_progress(DNA_GZ_PATH, DNA_FA_PATH, desc="Unzipping panda DNA")
+
+    # 3. remove line breaks
+    preprocess_dna_fasta(DNA_FA_PATH)
+
+    print(f"Final DNA fasta: {DNA_FA_PATH}")
+    print("==============================")
+
+generate_panda_dna_dataset()
