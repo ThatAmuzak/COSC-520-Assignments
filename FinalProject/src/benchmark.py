@@ -94,6 +94,46 @@ N_REPEAT = 3      # 3 repetitions per formal run (take min)
 
 
 # -----------------------------
+# Adaptive parameter selection
+# -----------------------------
+
+def get_adaptive_params(algo_name: str, text_size: int) -> Tuple[int, int, int]:
+    """
+    Adaptively select warmup, formal, and repeat parameters based on 
+    algorithm type and text size to reduce benchmark time.
+    
+    Strategy:
+    - Naive algorithm: Reduce parameters for text > 10K (it's very slow)
+    - Large texts (>100K): Reduce parameters for all algorithms
+    - Small texts (≤10K): Use full parameters for statistical significance
+    
+    Returns:
+        (n_warmup, n_formal, n_repeat)
+    """
+    # For Naive algorithm: it's O(n*m) so very slow on large texts
+    if algo_name == "Naive":
+        if text_size <= 1_000:
+            return (3, 10, 3)      # Small: full testing
+        elif text_size <= 10_000:
+            return (2, 5, 2)       # Medium: reduce
+        elif text_size <= 100_000:
+            return (1, 3, 2)       # Large: minimal testing
+        else:
+            return (0, 1, 1)       # Very large: barely test (or skip entirely)
+    
+    # For efficient algorithms (KMP, RabinKarp, BoyerMoore)
+    else:
+        if text_size <= 10_000:
+            return (3, 10, 3)      # Small: full testing
+        elif text_size <= 100_000:
+            return (2, 5, 2)       # Medium: moderate reduction
+        elif text_size <= 1_000_000:
+            return (1, 3, 2)       # Large: significant reduction
+        else:
+            return (1, 2, 1)       # Very large: minimal testing
+
+
+# -----------------------------
 # Helpers: load datasets
 # -----------------------------
 
@@ -413,18 +453,21 @@ def run_benchmark(
 
     records = []
 
-    # Calculate total steps for progress bar
+    # Calculate total steps for progress bar (considering adaptive parameters)
     algo_items = list(algorithms.items())
     dataset_items = list(full_datasets.items())
     hit_flags = [True, False]
     
-    total_steps = (
-        len(algo_items) * 
-        len(dataset_items) * 
-        len(hit_flags) * 
-        len(TEXT_SIZES) * 
-        N_FORMAL
-    )
+    # Calculate actual total steps with adaptive parameters
+    total_steps = 0
+    for algo_name, _ in algo_items:
+        for text_size in TEXT_SIZES:
+            _, n_formal, _ = get_adaptive_params(algo_name, text_size)
+            total_steps += len(dataset_items) * len(hit_flags) * n_formal
+    
+    print(f"[INFO] Using adaptive parameters to optimize benchmark speed")
+    print(f"[INFO] Estimated total formal runs: {total_steps}")
+    print(f"[INFO] (Original fixed config would be: {len(algo_items) * len(dataset_items) * len(hit_flags) * len(TEXT_SIZES) * N_FORMAL})")
 
     progress = tqdm(total=total_steps, desc="Benchmark", dynamic_ncols=True)
 
@@ -448,12 +491,16 @@ def run_benchmark(
                     # Calculate pattern size for this text size
                     pattern_size = get_pattern_size(text_size)
                     
+                    # Get adaptive parameters for this algorithm and text size
+                    n_warmup, n_formal, n_repeat = get_adaptive_params(algo_name, text_size)
+                    
                     debug_log(
                         f"[DEBUG] text_size={text_size}, pattern_size={pattern_size}, "
-                        f"ratio={pattern_size/text_size:.4f}"
+                        f"ratio={pattern_size/text_size:.4f}, "
+                        f"params=(warmup={n_warmup}, formal={n_formal}, repeat={n_repeat})"
                     )
 
-                    # Warmup: generate a pattern and run N_WARMUP times
+                    # Warmup: generate a pattern and run n_warmup times
                     warmup_pattern = gen_func(text, pattern_size, rng)
                     
                     debug_log(
@@ -461,8 +508,8 @@ def run_benchmark(
                         f"hit={hit_label}, text_size={text_size}, pattern_size={pattern_size}"
                     )
                     
-                    for warm_idx in range(N_WARMUP):
-                        debug_log(f"[DEBUG]   Warmup iter {warm_idx + 1}/{N_WARMUP}")
+                    for warm_idx in range(n_warmup):
+                        debug_log(f"[DEBUG]   Warmup iter {warm_idx + 1}/{n_warmup}")
                         _ = algo_func(warmup_pattern, text)
 
                     # release the memory of warmup_pattern
@@ -470,23 +517,23 @@ def run_benchmark(
                     gc.collect()
 
                     # Formal runs: generate fresh pattern for each run
-                    for run_idx in range(N_FORMAL):
+                    for run_idx in range(n_formal):
                         pattern = gen_func(text, pattern_size, rng)
                         
                         debug_log(
-                            f"[DEBUG] Formal run {run_idx + 1}/{N_FORMAL}: "
+                            f"[DEBUG] Formal run {run_idx + 1}/{n_formal}: "
                             f"algo={algo_name}, dataset={dataset_name}, "
                             f"hit={hit_label}, text_size={text_size}, pattern_size={len(pattern)}"
                         )
 
-                        # N_REPEAT repetitions, take minimum
+                        # n_repeat repetitions, take minimum
                         times: List[float] = []
                         mems: List[int] = []
 
-                        for rep_idx in range(N_REPEAT):
+                        for rep_idx in range(n_repeat):
                             t, m, result = measure_time_and_memory(algo_func, pattern, text)
                             debug_log(
-                                f"[DEBUG]   Rep {rep_idx + 1}/{N_REPEAT}: "
+                                f"[DEBUG]   Rep {rep_idx + 1}/{n_repeat}: "
                                 f"time={t:.6f}s, mem={m} bytes, matches={len(result)}"
                             )
                             times.append(t)
@@ -516,7 +563,7 @@ def run_benchmark(
                         progress.set_postfix_str(
                             f"{algo_name} | {dataset_name} | "
                             f"Text={text_size} | Pattern={pattern_size} | "
-                            f"{hit_label} | Run={run_idx+1}/{N_FORMAL}"
+                            f"{hit_label} | Run={run_idx+1}/{n_formal}"
                         )
 
     progress.close()
@@ -643,4 +690,3 @@ if __name__ == "__main__":
         analyzer.generate_all_plots()
         
         print("\nAnalysis complete! Check the 'plots/' directory for visualizations.")
-            
