@@ -4,6 +4,11 @@ algorithms.py
 Collection of classical substring search algorithms for profiling
 
 The implementations include:
+- naive_search: Naive brute-force string matching algorithm.
+
+    Function Signature:
+    naive_search(pattern: str, text: str) -> List[int]:
+
 - kmp_search: Knuth–Morris–Pratt algorithm using an LPS
     (longest proper prefix which is also suffix) table.
 
@@ -29,6 +34,43 @@ than highly optimized for every edge case.
 from typing import List
 
 from typeguard import typechecked
+
+
+@typechecked
+def naive_search(pattern: str, text: str) -> List[int]:
+    """
+    Naive brute-force substring search.
+
+    This is the simplest string matching algorithm. It checks every possible
+    position in the text by comparing characters one by one.
+    
+    Time complexity: O(n*m) in the worst case, where n = len(text) and 
+    m = len(pattern). This occurs when there are many partial matches.
+    
+    Space complexity: O(1) beyond the result storage.
+    """
+    if pattern == "":
+        return list(range(len(text) + 1))
+
+    n, m = len(text), len(pattern)
+    if m > n:
+        return []
+
+    res: List[int] = []
+    
+    # Try each possible starting position
+    for i in range(n - m + 1):
+        # Check if pattern matches at position i
+        match = True
+        for j in range(m):
+            if text[i + j] != pattern[j]:
+                match = False
+                break
+        
+        if match:
+            res.append(i)
+    
+    return res
 
 
 @typechecked
