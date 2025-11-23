@@ -2,13 +2,14 @@ import os
 import gc
 import time
 import random
+import tracemalloc
 from typing import Callable, Dict, List, Tuple
 import argparse
 import pandas as pd
 from tqdm.auto import tqdm
-import psutil
 
 from algorithms import kmp_search, rabin_karp, boyer_moore
+from analyze_benchmark import BenchmarkAnalyzer
 
 # -----------------------------
 # Debug switch
@@ -322,9 +323,6 @@ def get_pattern_generators():
 # Measurement helpers
 # -----------------------------
 
-process = psutil.Process(os.getpid())
-
-
 def measure_time_and_memory(
     func: Callable[[str, str], List[int]],
     pattern: str,
@@ -333,18 +331,31 @@ def measure_time_and_memory(
     """
     Measure time and memory for a single function call.
     
-    Returns:
-        (elapsed_time, memory_delta, result)
-    """
-    gc.collect()
-    rss_before = process.memory_info().rss
+    Uses tracemalloc for memory measurement as it's more accurate for
+    Python object allocation than RSS-based measurements.
     
+    Returns:
+        (elapsed_time, peak_memory_bytes, result)
+    """
+    import tracemalloc
+    
+    gc.collect()
+    
+    # Start memory tracing
+    tracemalloc.start()
+    
+    # Measure time
     t0 = time.perf_counter()
     result = func(pattern, text)
     t1 = time.perf_counter()
     
-    mem_used = process.memory_info().rss - rss_before
-    return t1 - t0, mem_used, result
+    # Get peak memory usage during execution
+    current, peak = tracemalloc.get_traced_memory()
+    tracemalloc.stop()
+    
+    elapsed = t1 - t0
+    
+    return elapsed, int(peak), result
 
 
 # -----------------------------
@@ -572,6 +583,12 @@ if __name__ == "__main__":
         help="Output CSV file path (default: benchmark_results.csv)"
     )
 
+    parser.add_argument(
+        "--analyze",
+        action="store_true",
+        help="Automatically generate analysis plots after benchmark completes"
+    )
+
     args = parser.parse_args()
     
     # Update settings
@@ -613,3 +630,17 @@ if __name__ == "__main__":
     df.to_csv(args.output, index=False)
     print(f"\n✓ Results saved to: {args.output}")
     print("=" * 60)
+    
+    # Run analysis if requested
+    if args.analyze:
+        print("\n" + "=" * 60)
+        print("RUNNING ANALYSIS...")
+        print("=" * 60)
+        
+            
+        analyzer = BenchmarkAnalyzer(args.output)
+        analyzer.generate_summary_statistics(save=True)
+        analyzer.generate_all_plots()
+        
+        print("\nAnalysis complete! Check the 'plots/' directory for visualizations.")
+            
