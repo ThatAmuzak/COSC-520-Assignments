@@ -8,9 +8,8 @@ import argparse
 import pandas as pd
 from tqdm.auto import tqdm
 
-from algorithms import kmp_search, rabin_karp, boyer_moore
+from algorithms import naive_search, kmp_search, rabin_karp, boyer_moore
 from analyze_benchmark import BenchmarkAnalyzer
-
 # -----------------------------
 # Debug switch
 # -----------------------------
@@ -383,6 +382,7 @@ def run_benchmark(
 
     # 2. Define algorithms
     algorithms: Dict[str, Callable[[str, str], List[int]]] = {
+        "Naive": naive_search,
         "KMP": kmp_search,
         "RabinKarp": rabin_karp,
         "BoyerMoore": boyer_moore,
@@ -565,7 +565,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--algos",
         nargs="+",
-        choices=["KMP", "RabinKarp", "BoyerMoore"],
+        choices=["Naive", "KMP", "RabinKarp", "BoyerMoore"],
         help="Algorithms to benchmark (default: all)"
     )
 

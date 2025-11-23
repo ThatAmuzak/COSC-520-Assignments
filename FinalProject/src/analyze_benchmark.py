@@ -205,7 +205,7 @@ class BenchmarkAnalyzer:
             ax.grid(True, alpha=0.3)
             
             # Add note if memory values are very small
-            if data['Memory_mean'].max() < 1024:
+            if data['Memory_mean'].max() < 1024:  # Less than 1KB
                 ax.text(0.5, 0.95, 
                        'Note: Memory usage is very small\n(algorithm overhead only)',
                        transform=ax.transAxes,
@@ -342,7 +342,7 @@ class BenchmarkAnalyzer:
     
     def plot_scaling_analysis(self, save: bool = True):
         """
-        Analyze and visualize scaling behavior (linear, log, etc.)
+        Analyze and visualize scaling behavior (linear, log-linear, quadratic, etc.)
         Fit curves to determine complexity.
         """
         from scipy.optimize import curve_fit
@@ -356,6 +356,10 @@ class BenchmarkAnalyzer:
         
         def log_linear(x, a, b):
             return a * x * np.log(x) + b
+        
+        def quadratic(x, a, b):
+            """O(n*m) for Naive - approximated as O(n*sqrt(n)) for varying pattern sizes"""
+            return a * x * np.sqrt(x) + b
         
         fig, axes = plt.subplots(len(datasets), 1, figsize=(12, 5 * len(datasets)))
         if len(datasets) == 1:
@@ -380,7 +384,7 @@ class BenchmarkAnalyzer:
                 x = data['TextSize'].values
                 y = data['Time_mean'].values
                 
-                # Try fitting O(n) and O(n log n)
+                # Try fitting O(n), O(n log n), and O(n*sqrt(n)) for Naive
                 try:
                     # O(n) fit
                     popt_linear, _ = curve_fit(linear, x, y)
@@ -392,15 +396,30 @@ class BenchmarkAnalyzer:
                     y_log = log_linear(x, *popt_log)
                     residual_log = np.sum((y - y_log) ** 2)
                     
+                    # O(n*sqrt(n)) fit (approximation for Naive's O(n*m) behavior)
+                    popt_quad, _ = curve_fit(quadratic, x, y)
+                    y_quad = quadratic(x, *popt_quad)
+                    residual_quad = np.sum((y - y_quad) ** 2)
+                    
                     # Determine best fit
-                    best_fit = "O(n)" if residual_linear < residual_log else "O(n log n)"
+                    residuals = {
+                        'O(n)': residual_linear,
+                        'O(n log n)': residual_log,
+                        'O(n*sqrt(n))': residual_quad
+                    }
+                    best_fit = min(residuals, key=residuals.get)
+                    
+                    # For Naive algorithm, prefer O(n*sqrt(n)) if it's close
+                    if algo == "Naive" and residual_quad < residual_linear * 1.5:
+                        best_fit = 'O(n*sqrt(n))'
                     
                     results.append({
                         'Dataset': dataset,
                         'Algo': algo,
                         'Best_Fit': best_fit,
                         'Linear_Residual': residual_linear,
-                        'LogLinear_Residual': residual_log
+                        'LogLinear_Residual': residual_log,
+                        'Quadratic_Residual': residual_quad
                     })
                     
                     # Plot actual data
@@ -409,8 +428,10 @@ class BenchmarkAnalyzer:
                     # Plot best fit
                     if best_fit == "O(n)":
                         ax.plot(x, y_linear, '--', label=f'{algo} O(n) fit', linewidth=2)
-                    else:
+                    elif best_fit == "O(n log n)":
                         ax.plot(x, y_log, '--', label=f'{algo} O(n log n) fit', linewidth=2)
+                    else:  # O(n*sqrt(n))
+                        ax.plot(x, y_quad, '--', label=f'{algo} O(n·√n) fit', linewidth=2)
                 
                 except Exception as e:
                     print(f"Warning: Could not fit {algo} on {dataset}: {e}")
@@ -487,6 +508,7 @@ class BenchmarkAnalyzer:
         if max_mem < 10240:  # Less than 10KB
             print("\n   Note: Memory values represent Python object allocation overhead.")
             print("     Actual algorithm space complexity:")
+            print("     - Naive: O(1) constant space")
             print("     - KMP: O(m) for prefix table")
             print("     - Boyer-Moore: O(m + σ) for skip tables")  
             print("     - Rabin-Karp: O(1) constant space")
