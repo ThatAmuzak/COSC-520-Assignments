@@ -367,32 +367,31 @@ def measure_time_and_memory(
     pattern: str,
     text: str,
 ) -> Tuple[float, int, List[int]]:
-    """
-    Measure time and memory for a single function call.
+    # Simple time-only measurement (fast path)
+    t0 = time.perf_counter()
+    result = func(pattern, text)
+    elapsed = time.perf_counter() - t0
     
-    Uses tracemalloc for memory measurement as it's more accurate for
-    Python object allocation than RSS-based measurements.
-    
-    Returns:
-        (elapsed_time, peak_memory_bytes, result)
-    """
-    import tracemalloc
-    
-    gc.collect()
-    
+    # Return with dummy memory value (will be measured separately when needed)
+    return elapsed, 0, result
+
+
+def measure_time_and_memory_full(
+    func: Callable[[str, str], List[int]],
+    pattern: str,
+    text: str,
+) -> Tuple[float, int, List[int]]:
     # Start memory tracing
     tracemalloc.start()
     
     # Measure time
     t0 = time.perf_counter()
     result = func(pattern, text)
-    t1 = time.perf_counter()
+    elapsed = time.perf_counter() - t0
     
     # Get peak memory usage during execution
     current, peak = tracemalloc.get_traced_memory()
     tracemalloc.stop()
-    
-    elapsed = t1 - t0
     
     return elapsed, int(peak), result
 
@@ -500,6 +499,10 @@ def run_benchmark(
                         f"params=(warmup={n_warmup}, formal={n_formal}, repeat={n_repeat})"
                     )
 
+                    # ==== OPTIMIZATION: Single GC before warmup ====
+                    # Only run GC once per configuration instead of before each measurement
+                    gc.collect()
+                    
                     # Warmup: generate a pattern and run n_warmup times
                     warmup_pattern = gen_func(text, pattern_size, rng)
                     
@@ -512,9 +515,8 @@ def run_benchmark(
                         debug_log(f"[DEBUG]   Warmup iter {warm_idx + 1}/{n_warmup}")
                         _ = algo_func(warmup_pattern, text)
 
-                    # release the memory of warmup_pattern
-                    del warmup_pattern 
-                    gc.collect()
+                    # Release warmup pattern (no GC call here, already clean)
+                    del warmup_pattern
 
                     # Formal runs: generate fresh pattern for each run
                     for run_idx in range(n_formal):
@@ -526,12 +528,21 @@ def run_benchmark(
                             f"hit={hit_label}, text_size={text_size}, pattern_size={len(pattern)}"
                         )
 
-                        # n_repeat repetitions, take minimum
+                        # ==== OPTIMIZATION: Smart memory measurement ====
+                        # Only measure memory on first repetition, then use fast time-only measurement
                         times: List[float] = []
                         mems: List[int] = []
 
                         for rep_idx in range(n_repeat):
-                            t, m, result = measure_time_and_memory(algo_func, pattern, text)
+                            if rep_idx == 0:
+                                # First repetition: measure both time and memory
+                                t, m, result = measure_time_and_memory_full(algo_func, pattern, text)
+                            else:
+                                # Subsequent repetitions: only measure time (much faster)
+                                t, m, result = measure_time_and_memory(algo_func, pattern, text)
+                                # Use memory from first measurement
+                                m = mems[0] if mems else 0
+                            
                             debug_log(
                                 f"[DEBUG]   Rep {rep_idx + 1}/{n_repeat}: "
                                 f"time={t:.6f}s, mem={m} bytes, matches={len(result)}"
@@ -540,7 +551,8 @@ def run_benchmark(
                             mems.append(m)
 
                         best_time = min(times)
-                        best_mem = min(mems)
+                        # Use memory from first measurement (most accurate)
+                        best_mem = mems[0] if mems else 0
 
                         debug_log(
                             f"[DEBUG]   Best: time={best_time:.6f}s, mem={best_mem} bytes"
