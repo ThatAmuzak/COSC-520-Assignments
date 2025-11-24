@@ -17,19 +17,71 @@
   python .\src\generate_dataset.py
   ```
 
-- **Profiling**:
-  To run the profiling script, simply run:
-
-  ```sh
-  python .\src\profile.py
-  ```
-
 - **Testing**:
   To run all unit tests, simply run
 
   ```sh
   pytest -s .\tests\test_algorithms.py
   ```
+- **Benchmarking**:
+  To run comprehensive performance benchmarks across different text and pattern sizes, simply run:
+```sh
+  python .\benchmark.py
+```
+
+  The benchmark script supports several command-line options for customization:
+```sh
+  python .\benchmark.py --help
+```
+
+  Common usage examples:
+```sh
+  # Run benchmark with default settings
+  python .\benchmark.py
+
+  # Test specific algorithms only
+  python .\benchmark.py --algos KMP BoyerMoore
+
+  # Test on specific datasets
+  python .\benchmark.py --datasets Gutenberg DNA
+
+  # Customize benchmark parameters
+  python .\benchmark.py --warmup 5 --formal 15 --repeat 3
+
+  # Save results to custom file and auto-analyze
+  python .\benchmark.py --output my_results.csv --analyze
+
+  # Enable debug logging for detailed output
+  python .\benchmark.py --debug
+```
+
+- **Analysis**:
+  To analyze benchmark results and generate visualizations, simply run:
+```sh
+  python .\analyze_benchmark.py benchmark_results.csv
+```
+
+  The analysis script provides various visualization options:
+```sh
+  # Generate all plots
+  python .\analyze_benchmark.py benchmark_results.csv
+
+  # Generate specific plots only
+  python .\analyze_benchmark.py benchmark_results.csv --plots time_text memory scaling
+
+  # Save plots without displaying them
+  python .\analyze_benchmark.py benchmark_results.csv --no-show
+```
+
+  Available plot types:
+  - `time_text`: Execution time vs text size
+  - `time_pattern`: Execution time vs pattern size
+  - `memory`: Memory usage analysis
+  - `hit_miss`: Pattern match hit/miss comparison
+  - `heatmap`: Algorithm performance heatmaps
+  - `scaling`: Time complexity scaling analysis
+  - `all`: Generate all visualizations (default)
+
 
 ---
 
