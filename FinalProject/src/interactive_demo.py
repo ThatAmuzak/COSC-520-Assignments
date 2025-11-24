@@ -72,7 +72,7 @@ class SearchApp(App):
     def _load_text(self, path: Path) -> str:
         return path.read_text(encoding="utf-8", errors="ignore")
 
-    def _make_preview(self, text: str, start: int, pat_len: int, ctx: int = 40) -> str:
+    def _make_preview(self, text: str, start: int, pat_len: int, ctx: int = 20) -> str:
         s = max(0, start - ctx)
         e = min(len(text), start + pat_len + ctx)
         snippet = text[s:e].replace("\n", " ")
@@ -80,7 +80,7 @@ class SearchApp(App):
             snippet = "..." + snippet
         if e < len(text):
             snippet += "..."
-        rs, re = start - s, start - s + pat_len
+        rs, re = start - s + 3, start - s + pat_len + 3
         if 0 <= rs < len(snippet):
             snippet = snippet[:rs] + "[[" + snippet[rs:re] + "]]" + snippet[re:]
         return snippet
@@ -113,12 +113,15 @@ class SearchApp(App):
 
         self.results_view.remove_children()
         total = len(matches)
+        self.results_view.mount(Static("================================="))
         self.results_view.mount(
             Static(f"Results: {total} matches, time: {(t1 - t0) * 1000:.2f} ms")
         )
-        for idx in matches[:10]:
+        self.results_view.mount(Static("================================="))
+        for idx in matches[:30]:
             self.results_view.mount(Static(self._make_preview(text, idx, len(pattern))))
         if total > 10:
+            self.results_view.mount(Static("================================="))
             self.results_view.mount(Static(f"... and {total - 10} more matches"))
 
         status.update(
