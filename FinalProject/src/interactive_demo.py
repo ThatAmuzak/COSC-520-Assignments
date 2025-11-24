@@ -19,7 +19,7 @@ from textual.widgets import (
     Static,
 )
 
-DATASET_DIR = Path.cwd() / "src/datasets"
+DATASET_DIR = Path.cwd() / "data/gutenberg_books"
 DATASET_FILES = sorted(DATASET_DIR.glob("*.txt")) if DATASET_DIR.exists() else []
 
 ALGORITHMS = {"KMP": kmp_search, "Rabin-Karp": rabin_karp, "Boyer-Moore": boyer_moore}
