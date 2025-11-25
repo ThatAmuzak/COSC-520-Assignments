@@ -21,96 +21,130 @@ from textual.widgets import (
 DATASET_DIR = Path.cwd() / "data/gutenberg_books"
 DATASET_FILES = sorted(DATASET_DIR.glob("*.txt")) if DATASET_DIR.exists() else []
 
-ALGORITHMS = {"KMP": kmp_search, "Rabin-Karp": rabin_karp, "Boyer-Moore": boyer_moore}
+ALGORITHMS = {
+    "KMP": kmp_search,
+    "Rabin-Karp": rabin_karp,
+    "Boyer-Moore": boyer_moore,
+}
 
 
 class SearchApp(App):
     CSS = """
     Screen {
         padding: 1 2;
-        background: #1b1b1b;
+        background: #121212;
         color: #e0e0e0;
     }
 
-    /* Panels */
-#sidebar, #right_pane {
-        background: #222;
-        border: solid #373737;
+    #sidebar, #right_pane {
+        background: #1c1c1c;
+        border: solid #444;
         padding: 1;
     }
 
-#sidebar {
+    #sidebar {
         width: 32%;
         min-width: 30;
     }
 
-#right_pane {
+    #right_pane {
         margin-left: 1;
     }
 
-#top_section {
+    #top_section {
         height: 30%;
     }
 
-#bottom_section {
+    #bottom_section {
         height: 60%;
     }
 
-    /* Place search bar and status side by side, equal width */
-#search_and_status {
+    #search_and_status {
         layout: horizontal;
+        margin: 0;
     }
 
-#pattern_input, #status {
+    #pattern_input, #status {
         width: 1fr;
     }
 
-    /* Section headers */
-#header_alg, #header_ds, #header_inp, #header_res {
+    /* Section headers with deep colors */
+    #header_alg, #header_ds {
         text-style: bold;
         padding: 1 0;
-        background: #2c2c2c;
-        border-bottom: solid #444;
+        background: #8e2de2;
+        color: #fff;
+        border-bottom: solid #555;
         content-align: center middle;
     }
 
-    /* Lists */
-#alg_set, #datasets_list {
+    #header_inp {
+        text-style: bold;
+        padding: 1 0;
+        background: #ff6a00;
+        color: #fff;
+        content-align: center middle;
+    }
+
+    #header_res {
+        text-style: bold;
+        padding: 1 0;
+        background: #00c6ff;
+        color: #111;
+        content-align: center middle;
+    }
+
+    #alg_set, #datasets_list {
         margin-top: 1;
-        background: #1f1f1f;
+        background: #222;
         border: solid #333;
         padding: 1;
     }
 
-    /* Pattern input */
-#pattern_input {
-        margin: 1 0;
-        background: #111;
-        border: solid #444;
+    #pattern_input {
+        margin: 0;
+        background: #1a1a1a;
+        border: solid #555;
+        color: #fff;
     }
 
-    /* Button */
-#search_btn {
+    #search_btn {
         margin-bottom: 1;
-        background: #303030;
-        border: solid #555;
+        background: #ff416c;
+        border: solid #777;
+        color: #fff;
         width: 100%;
     }
 
-    /* Status bar */
-#status {
+    #status {
         padding: 1;
-        background: #242424;
-        border: solid #444;
+        background: #333333;
+        border: solid #555;
+        color: #fff;
         margin-bottom: 1;
     }
 
-    /* Results area */
-#results_view {
+    #results_view {
         margin-top: 1;
-        background: #151515;
+        background: #1b1b1b;
         border: solid #333;
         padding: 1;
+        color: #ddd;
+    }
+
+    ListView > Static {
+        border-bottom: dashed #444;
+        padding: 0 1;
+    }
+
+    RadioButton {
+        background: #2a2a2a;
+        color: #ddd;
+    }
+
+    RadioButton.--selected {
+        background: #6a0dad;
+        color: #fff;
     }
     """
 
@@ -225,7 +259,7 @@ class SearchApp(App):
         if total == 0:
             self.results_view.mount(Static("No matches found"))
         else:
-            for idx in matches[:20]:
+            for idx in matches[:50]:
                 self.results_view.mount(
                     Static(self._make_preview(text, idx, len(pattern)))
                 )
@@ -236,8 +270,8 @@ class SearchApp(App):
                 [
                     "[i]Status:[/i]     [b]Done[/b]",
                     f"[i]Dataset:[/i]    [b]{ds_path.name}[/b]",
-                    f"[i]Matches:[/i]    [b][green]{total}[/green][/b]",
-                    f"[i]Time:[/i]       [b][yellow]{elapsed:.2f} ms[/yellow][/b]",
+                    f"[i]Matches:[/i]    [b][lime]{total}[/lime][/b]",
+                    f"[i]Time:[/i]       [b][gold]{elapsed:.2f} ms[/gold][/b]",
                 ]
             )
         )
