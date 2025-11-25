@@ -48,6 +48,20 @@ class SearchApp(App):
         margin-left: 1;
     }
 
+    /* Split right pane vertically: top_section (search+status) and bottom_section (results) */
+#top_section, #bottom_section {
+        height: 1fr;
+    }
+
+    /* Place search bar and status side by side, equal width */
+#search_and_status {
+        layout: horizontal;
+    }
+
+#pattern_input, #status {
+        width: 1fr;
+    }
+
     /* Section headers */
 #header_alg, #header_ds, #header_inp, #header_res {
         text-style: bold;
@@ -96,7 +110,14 @@ class SearchApp(App):
     }
     """
 
-    BINDINGS = [("q", "quit", "Quit")]
+    BINDINGS = [
+        ("q", "quit", "Quit"),
+        ("a", "next_algorithm", "Next Algorithm"),
+        ("d", "next_dataset", "Next Dataset"),
+        ("A", "previous_algorithm", "Previous Algorithm"),
+        ("D", "previous_dataset", "Previous Dataset"),
+        ("i", "focus_input", "Focus Input"),
+    ]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
@@ -116,17 +137,21 @@ class SearchApp(App):
                 yield ListView(*items, id="datasets_list")
 
             with Vertical(id="right_pane"):
-                yield Static("Pattern Input", id="header_inp")
-                yield Input(
-                    placeholder="Type pattern and press Enter or click Search",
-                    id="pattern_input",
-                )
-                yield Button("Search", id="search_btn")
-                yield Static("Status: idle", id="status")
+                with Vertical(id="top_section"):
+                    with Horizontal():
+                        yield Static("Pattern Input", id="header_inp")
+                    with Horizontal(id="search_and_status"):
+                        yield Input(
+                            placeholder="Type pattern and press Enter or click Search",
+                            id="pattern_input",
+                        )
+                        yield Static("Status: idle", id="status")
 
-                yield Static("Results", id="header_res")
-                self.results_view = ListView(id="results_view")
-                yield self.results_view
+                yield Button("Search", id="search_btn")
+                with Vertical(id="bottom_section"):
+                    yield Static("Results", id="header_res")
+                    self.results_view = ListView(id="results_view")
+                    yield self.results_view
 
         yield Footer()
 
@@ -176,12 +201,12 @@ class SearchApp(App):
 
         if not pattern:
             self.results_view.remove_children()
-            status.update("Status: enter a pattern")
+            status.update("[i]Status[/i]: enter a pattern")
             return
 
         ds_path = self.get_selected_dataset()
         if not ds_path:
-            status.update("Status: no dataset")
+            status.update("[i]Status[/i]: no dataset")
             return
 
         algo = self.get_selected_algorithm()
@@ -205,13 +230,48 @@ class SearchApp(App):
         status.update(
             "\n".join(
                 [
-                    "[b]Status:[/b]     done",
-                    f"[b]Dataset:[/b]    {ds_path.name}",
-                    f"[b]Matches:[/b]    [green]{total}[/green]",
-                    f"[b]Time:[/b]       [yellow]{elapsed:.2f} ms[/yellow]",
+                    "[i]Status:[/i]     [b]Done[/b]",
+                    f"[i]Dataset:[/i]    [b]{ds_path.name}[/b]",
+                    f"[i]Matches:[/i]    [b][green]{total}[/green][/b]",
+                    f"[i]Time:[/i]       [b][yellow]{elapsed:.2f} ms[/yellow][/b]",
                 ]
             )
         )
+
+    def action_focus_input(self):
+        self.query_one(Input).focus()
+
+    def action_next_algorithm(self):
+        rs = self.query_one(RadioSet)
+        buttons = list(rs.query(RadioButton))
+        idx = next((i for i, b in enumerate(buttons) if b.value), 0)
+        buttons[idx].value = False
+        buttons[(idx + 1) % len(buttons)].value = True
+
+    def action_next_dataset(self):
+        lv = self.query_one("#datasets_list", ListView)
+        if not DATASET_FILES:
+            return
+        next_idx = 0 if lv.index is None else (lv.index + 1) % len(DATASET_FILES)
+        lv.index = next_idx
+
+    def action_previous_algorithm(self):
+        rs = self.query_one(RadioSet)
+        buttons = list(rs.query(RadioButton))
+        idx = next((i for i, b in enumerate(buttons) if b.value), 0)
+        buttons[idx].value = False
+        buttons[(idx - 1) % len(buttons)].value = True
+
+    def action_previous_dataset(self):
+        lv = self.query_one("#datasets_list", ListView)
+        if not DATASET_FILES:
+            return
+        prev_idx = (
+            (lv.index - 1) % len(DATASET_FILES)
+            if lv.index is not None
+            else len(DATASET_FILES) - 1
+        )
+        lv.index = prev_idx
 
 
 if __name__ == "__main__":
