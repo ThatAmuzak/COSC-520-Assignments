@@ -5,7 +5,6 @@ from typing import Callable, List
 from algorithms import boyer_moore, kmp_search, rabin_karp
 from textual.app import App, ComposeResult
 from textual.containers import Horizontal, Vertical
-from textual.scroll_view import ScrollView
 from textual.widgets import (
     Button,
     Footer,
@@ -126,13 +125,14 @@ class SearchApp(App):
                 yield Static("Status: idle", id="status")
 
                 yield Static("Results", id="header_res")
-                self.results_view = ScrollView(id="results_view")
+                self.results_view = ListView(id="results_view")
                 yield self.results_view
 
         yield Footer()
 
     def on_mount(self):
         self.query_one(Input).focus()
+        self.results_view.remove_children()
 
     def get_selected_dataset(self):
         sel = self.query_one(ListView).index
@@ -173,7 +173,9 @@ class SearchApp(App):
     def do_search(self):
         status = self.query_one("#status", Static)
         pattern = self.query_one(Input).value or ""
+
         if not pattern:
+            self.results_view.remove_children()
             status.update("Status: enter a pattern")
             return
 
@@ -191,8 +193,13 @@ class SearchApp(App):
 
         self.results_view.remove_children()
         total = len(matches)
-        for idx in matches[:20]:
-            self.results_view.mount(Static(self._make_preview(text, idx, len(pattern))))
+        if total == 0:
+            self.results_view.mount(Static("No matches found"))
+        else:
+            for idx in matches[:20]:
+                self.results_view.mount(
+                    Static(self._make_preview(text, idx, len(pattern)))
+                )
 
         elapsed = (t1 - t0) * 1000
         status.update(
