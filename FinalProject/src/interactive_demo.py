@@ -26,31 +26,109 @@ ALGORITHMS = {"KMP": kmp_search, "Rabin-Karp": rabin_karp, "Boyer-Moore": boyer_
 
 
 class SearchApp(App):
+    CSS = """
+    Screen {
+        padding: 1 2;
+        background: #1b1b1b;
+        color: #e0e0e0;
+    }
+
+    /* Panels */
+#sidebar, #right_pane {
+        background: #222;
+        border: solid #373737;
+        padding: 1;
+    }
+
+#sidebar {
+        width: 32%;
+        min-width: 30;
+    }
+
+#right_pane {
+        margin-left: 1;
+    }
+
+    /* Section headers */
+#header_alg, #header_ds, #header_inp, #header_res {
+        text-style: bold;
+        padding: 1 0;
+        background: #2c2c2c;
+        border-bottom: solid #444;
+        content-align: center middle;
+    }
+
+    /* Lists */
+#alg_set, #datasets_list {
+        margin-top: 1;
+        background: #1f1f1f;
+        border: solid #333;
+        padding: 1;
+    }
+
+    /* Pattern input */
+#pattern_input {
+        margin: 1 0;
+        background: #111;
+        border: solid #444;
+    }
+
+    /* Button */
+#search_btn {
+        margin-bottom: 1;
+        background: #303030;
+        border: solid #555;
+    }
+
+    /* Status bar */
+#status {
+        padding: 1;
+        background: #242424;
+        border: solid #444;
+        margin-bottom: 1;
+    }
+
+    /* Results area */
+#results_view {
+        margin-top: 1;
+        background: #151515;
+        border: solid #333;
+        padding: 1;
+    }
+    """
+
     BINDINGS = [("q", "quit", "Quit")]
 
     def compose(self) -> ComposeResult:
         yield Header(show_clock=True)
         with Horizontal():
-            with Vertical():
+            with Vertical(id="sidebar"):
+                yield Static("Search Algorithm", id="header_alg")
+                rs_items = [RadioButton(name, name=name) for name in ALGORITHMS.keys()]
+                rs_items[0].value = True
+                yield RadioSet(*rs_items, id="alg_set")
+
+                yield Static("Datasets", id="header_ds")
                 items = (
                     [ListItem(Label(p.name)) for p in DATASET_FILES]
                     if DATASET_FILES
                     else [ListItem(Label("(no .txt files found)"))]
                 )
                 yield ListView(*items, id="datasets_list")
-                rs_items = [RadioButton(name, name=name) for name in ALGORITHMS.keys()]
-                rs_items[0].value = True
-                yield RadioSet(*rs_items, id="alg_set")
-            with Vertical():
-                yield Label("Pattern to search:")
+
+            with Vertical(id="right_pane"):
+                yield Static("Pattern Input", id="header_inp")
                 yield Input(
                     placeholder="Type pattern and press Enter or click Search",
                     id="pattern_input",
                 )
                 yield Button("Search", id="search_btn")
                 yield Static("Status: idle", id="status")
+
+                yield Static("Results", id="header_res")
                 self.results_view = ScrollView(id="results_view")
                 yield self.results_view
+
         yield Footer()
 
     def on_mount(self):
@@ -113,20 +191,19 @@ class SearchApp(App):
 
         self.results_view.remove_children()
         total = len(matches)
-        self.results_view.mount(Static("================================="))
-        self.results_view.mount(
-            Static(f"Results: {total} matches, time: {(t1 - t0) * 1000:.2f} ms")
-        )
-        self.results_view.mount(Static("================================="))
-        for idx in matches[:30]:
+        for idx in matches[:20]:
             self.results_view.mount(Static(self._make_preview(text, idx, len(pattern))))
-        if total > 10:
-            self.results_view.mount(Static("================================="))
-            self.results_view.mount(Static(f"... and {total - 10} more matches"))
 
+        elapsed = (t1 - t0) * 1000
         status.update(
-            f"Status: done. dataset={ds_path.name} matches={total} time={
-                (t1 - t0) * 1000:.2f}ms"
+            "\n".join(
+                [
+                    "[b]Status:[/b]     done",
+                    f"[b]Dataset:[/b]    {ds_path.name}",
+                    f"[b]Matches:[/b]    [green]{total}[/green]",
+                    f"[b]Time:[/b]       [yellow]{elapsed:.2f} ms[/yellow]",
+                ]
+            )
         )
 
 
