@@ -48,9 +48,12 @@ class SearchApp(App):
         margin-left: 1;
     }
 
-    /* Split right pane vertically: top_section (search+status) and bottom_section (results) */
-#top_section, #bottom_section {
-        height: 1fr;
+#top_section {
+        height: 30%;
+    }
+
+#bottom_section {
+        height: 60%;
     }
 
     /* Place search bar and status side by side, equal width */
@@ -91,6 +94,7 @@ class SearchApp(App):
         margin-bottom: 1;
         background: #303030;
         border: solid #555;
+        width: 100%;
     }
 
     /* Status bar */
@@ -175,7 +179,7 @@ class SearchApp(App):
     def _load_text(self, path: Path) -> str:
         return path.read_text(encoding="utf-8", errors="ignore")
 
-    def _make_preview(self, text: str, start: int, pat_len: int, ctx: int = 20) -> str:
+    def _make_preview(self, text: str, start: int, pat_len: int, ctx: int = 40) -> str:
         s = max(0, start - ctx)
         e = min(len(text), start + pat_len + ctx)
         snippet = text[s:e].replace("\n", " ")
