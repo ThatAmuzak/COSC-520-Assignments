@@ -47,37 +47,42 @@ TEXT_SIZES = [
     10_000_000,
 ]
 
-# Pattern size calculation strategies
 def pattern_size_scaling_with_cap(text_size: int, max_pattern: int = 10_000) -> int:
     """
     Pattern size scales with text size but has an upper bound.
+    Corrected to be monotonically increasing.
     
     Strategy:
-    - For small texts (< 10K): pattern = text_size / 10
-    - For medium texts (10K - 1M): pattern = sqrt(text_size)
-    - For large texts (> 1M): pattern = min(text_size^0.4, max_pattern)
-    
-    This ensures:
-    - Pattern stays reasonable relative to text
-    - Pattern doesn't grow unbounded for huge texts
-    - Pattern is always searchable (< text_size)
+    - < 10K: Linear (10%) -> Ends at 1,000
+    - 10K - 1M: Sqrt scaled -> Starts at 1,000, ends at 10,000
+    - > 1M: Power 0.4 scaled -> Starts at 10,000
     """
     import math
     
     if text_size < 10_000:
         # Small texts: 10% of text size
+        # Range: 10 -> 999
         pattern_size = max(10, text_size // 10)
+        
     elif text_size < 1_000_000:
         # Medium texts: square root scaling
-        pattern_size = max(100, int(math.sqrt(text_size)))
+        # We multiply by 10 to ensure it connects with the previous segment
+        # At 10,000: sqrt(10000)*10 = 100*10 = 1,000 (Matches previous segment)
+        # At 1M: sqrt(1M)*10 = 1000*10 = 10,000
+        pattern_size = int(math.sqrt(text_size) * 10)
+        
     else:
-        # Large texts: slow growth with cap
-        pattern_size = max(500, int(text_size ** 0.4))
+        # Large texts: slow growth (power 0.4)
+        # We multiply by 40 to ensure it connects with the previous segment
+        # At 1M: (10^6)^0.4 * 40 = 251.18 * 40 ≈ 10,047 (Matches approx 10,000)
+        pattern_size = int((text_size ** 0.4) * 40)
     
-    # Apply cap and ensure it's less than text
+    # Apply cap and ensure it's strictly less than text
+    # strict (< text_size) is crucial for search algos
     pattern_size = min(pattern_size, max_pattern, text_size - 1)
     
-    return pattern_size
+    # Final safety for very small texts (e.g. size 100 -> pattern 10)
+    return max(1, pattern_size)
 
 
 def pattern_size_fixed(text_size: int, fixed_size: int = 100) -> int:
